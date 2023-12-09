@@ -2,10 +2,8 @@
 from tkinter import *
 from tkinter import ttk
 
-from DATA.SettingClass.DailyExpense import DailyExpense
 from DATA.SettingClass.DailyInventory import DailyInventory
 from STATIC.ConstantFile import couleur_sous_fenetre, couleur_label, couleur_inverse_tree
-from Service.DateTimeService import DateTimeService
 
 
 class DailyInventoryTable(Frame):
