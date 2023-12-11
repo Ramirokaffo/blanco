@@ -163,8 +163,6 @@ class OneSaleLine(Frame):
                                                       f'le dernier approvisionnement')
             return None
         real_product_count: int = int(product_count)
-        print("product_stock", product_stock)
-        print("real_product_count", real_product_count)
         if int(product_stock) < real_product_count:
             messagebox.showerror("Stock insuffisant", f'Le stock du produit {self.current_product.name} ne peut '
                                                       f'pas satisfaire la demande actuelle; Rassurez-vous d\'avoir '

@@ -26,6 +26,14 @@ class Daily:
                 return Daily.from_map(result) if not return_map else result
 
     @staticmethod
+    def get_under_id(id, return_map: bool = False):
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(f"SELECT * FROM {Daily.table_name} WHERE id < %s LIMIT 1;", [id])
+                result = my_cursor.fetchone()
+                return Daily.from_map(result) if not return_map else result
+
+    @staticmethod
     def get_all(return_map: bool = False):
         with connect_to_db() as bd_connection:
             with bd_connection.cursor(dictionary=True) as my_cursor:

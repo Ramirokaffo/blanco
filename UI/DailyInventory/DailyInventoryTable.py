@@ -51,6 +51,11 @@ class DailyInventoryTable(Frame):
 
         self.table.bind("<ButtonRelease-3>", self.show_popup_depense)
 
+        self.bind("<Expose>", self.bind_on_expose)
+
+    def bind_on_expose(self, event):
+        self.load_table_data()
+
     def get_selected_depense_id(self):
         dep_select = self.table.selection()
         if dep_select[0]:
@@ -88,7 +93,7 @@ class DailyInventoryTable(Frame):
                                                                 daily_inventory.cash_float,
                                                                 daily_inventory.daily_recipe_amount,
                                                                 daily_inventory.daily_expense_amount,
-                                                                daily_inventory.other_recipe_amount,
+                                                                daily_inventory.sale_recipe_amount,
                                                                 daily_inventory.create_at,
                                                                 daily_inventory.saver_staff.get_all_name() if \
                                                                 daily_inventory.saver_staff is not None else "Aucun",

@@ -2,7 +2,6 @@ import os.path
 import signal
 import io
 from PIL import Image
-
 from flask import Flask, jsonify, request, send_file, abort
 import threading
 

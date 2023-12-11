@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import MySQLdb
-import mysql
 
 from DATA.DataBase.DBTableName import DBTableName
 from DATA.Enumeration.UserRoleEnum import UserRoleEnum
@@ -12,6 +11,7 @@ from DATA.DataBase.DBManager import connect_to_db
 class Staff(BaseUser):
     my_db = connect_to_db()
     current_staff = None
+    table_name: str = DBTableName.staff
 
     def __init__(self, id: int = None, username: str = None, firstname: str = None, lastname: str = None,
                  phone_number: str = None, email: str = None, delete_at: datetime = None, create_at: datetime = None,
@@ -23,7 +23,6 @@ class Staff(BaseUser):
         self.password: str = password
         self.role: str = role
         self.is_active = is_active
-        self.table_name: str = DBTableName.staff
         self.my_map = {}
 
     def __eq__(self, other):
@@ -160,10 +159,11 @@ class Staff(BaseUser):
                 result = my_cursor.fetchone()
                 return Staff.from_map(result) if not return_map else result
 
-    def get_all(self, return_map: bool = False, just_active: bool = True):
+    @staticmethod
+    def get_all(return_map: bool = False, just_active: bool = True):
         with connect_to_db() as bd_connection:
             with bd_connection.cursor(dictionary=True) as my_cursor:
-                my_cursor.execute(f'''SELECT * FROM {self.table_name} WHERE delete_at IS NULL {"AND is_active = '1'" 
+                my_cursor.execute(f'''SELECT * FROM {Staff.table_name} WHERE delete_at IS NULL {"AND is_active = '1'" 
                 if just_active else "" };''')
                 return [Staff.from_map(result) if not return_map else result for result in my_cursor.fetchall()]
 

@@ -1,12 +1,14 @@
-from datetime import date
-from tkinter import *
+from customtkinter import CTkToplevel
 
 from DATA.SettingClass.Product import Product
+from DATA.SettingClass.Supply import Supply
 from STATIC.ConstantFile import *
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
 import asyncio
 
 from Service.ImageService import redimension_icone
+from UI.Home.Vente.VentePage import VentePage
+from UI.SupplyPage.AddSupplyForm import AddSupplyForm
 
 
 class ProductTable(Frame):
@@ -25,7 +27,6 @@ class ProductTable(Frame):
         self.fenetre_info_vente = Frame(self.master, bg=couleur_sous_fenetre)
         self.variable_control_recherche = IntVar()
         self.variable_control_recherche.set(0)
-        # self.fonction_validation_recherche_vente = self.fenetre_info_vente.register(lambda: self.show_search_result(0))
 
         self.frame_recherche = LabelFrame(self.fenetre_info_vente, text="", width=10,
                                           bg=couleur_sous_fenetre, bd=bd_widget, relief=relief_widget,
@@ -66,14 +67,12 @@ class ProductTable(Frame):
         self.scroll_bar_x = Scrollbar(self.frame_mil_vente, troughcolor="blue", bg="yellow",
                                       orient=HORIZONTAL)
         self.scroll_bar_x.pack(fill=X, side=BOTTOM)
-        self.colone = [str(j) for j in range(1, 11)]
         self.table = ttk.Treeview(self.frame_mil_vente, selectmode=EXTENDED, height=int(self.height),
                                   style="mystyle.Treeview",
-                                  yscrollcommand=self.table_y_scroll_command, columns=self.colone,
-                                  show="headings", padding=[20, 8, 90, 20],
+                                  yscrollcommand=self.table_y_scroll_command, columns=[str(j) for j in range(1, 11)],
+                                  show="headings",
                                   xscrollcommand=self.scroll_bar_x.set)
 
-        self.table.bind("<<TreeviewSelect>>", self.affiche_auto_info_vente)
         self.table.heading("1", text="Code", anchor=W)
         self.table.heading("2", text="Nom", anchor=W)
         self.table.heading("3", text="Stock", anchor=W)
@@ -86,13 +85,14 @@ class ProductTable(Frame):
         self.table.heading("10", text="Description", anchor=W)
 
         self.table.column("1", width=100, minwidth=50, anchor=W)
-        self.table.column("2", width=350, minwidth=100, anchor=W)
-        self.table.column("3", width=150, minwidth=100, anchor=E)
-        self.table.column("4", width=80, minwidth=50, anchor=W)
-        self.table.column("5", width=119, minwidth=150, anchor=E)
-        self.table.column("6", width=119, minwidth=100, anchor=W)
-        self.table.column("7", width=119, minwidth=100, anchor=E)
-        self.table.column("8", width=119, minwidth=100, anchor=W)
+        self.table.column("2", width=350, minwidth=300, anchor=W)
+        self.table.column("3", width=150, minwidth=100, anchor=W)
+        self.table.column("4", width=80, minwidth=150, anchor=E)
+        self.table.column("5", width=119, minwidth=100, anchor=W)
+        self.table.column("6", width=119, minwidth=100, anchor=E)
+        self.table.column("7", width=119, minwidth=100, anchor=W)
+        self.table.column("8", width=119, minwidth=100, anchor=E)
+        self.table.column("9", width=119, minwidth=100, anchor=W)
         self.table.column("10", width=119, minwidth=500, anchor=W)
 
         self.table.pack(expand=YES)
@@ -110,8 +110,7 @@ class ProductTable(Frame):
                                          font=(police, taille_police_texte + 3, "bold"))
         self.label_montant_vente.pack(side=RIGHT, anchor=SE)
 
-        self.table.bind("<ButtonRelease-3>", self.popup_info_vente)
-        self.table.bind("<<TreeviewSelect>>", self.affiche_auto_info_vente)
+        self.table.bind("<ButtonRelease-3>", self.show_table_popup)
         self.bind("<Expose>", self.bind_on_expose)
         self.affiche_treeview(0)
 
@@ -139,65 +138,48 @@ class ProductTable(Frame):
         self.master.destroy()
         return
 
-    def affiche_auto_info_vente(self, event):
-        """Afficher automatiquement les informations de la vente lorsque l'utilisateur clique sur une vente"""
-        """variable_flexible_info_vente"""
-        # print(fenetre_info_vente.focus_get())
-        index_ligne_select = self.table.selection()
-        if index_ligne_select:
-            #     print(table.item(index_ligne_select[0])["values"])
-            #     valeur_ligne_select =f"{chr(9658)} {((table.item(index_ligne_select[0])['values'])[4].replace(f'{chr(9658)}', '+'))[2:]}"
-            #     variable_flexible_info_vente.set(valeur_ligne_select)
-            pass
+    def show_table_popup(self, event):
+        selected_line = self.table.selection()
+        if selected_line:
+            main_menu = Menu(self.table, tearoff=0, title="Action sur les produits avec stock "
+                                                        "critic", relief=FLAT)
+            main_menu.add_command(label=f"Approvisionnement", command=self.quick_supply)
+            sale_sub_menu = Menu(main_menu, tearoff=False)
+            sale_sub_menu.add_command(label="Ajouter à la vente courante",
+                                      command=lambda: self.sale_selected_product(is_new_sale=False))
+            sale_sub_menu.add_command(label="Nouvelle vente",
+                                      command=lambda: self.sale_selected_product(is_new_sale=True))
+            main_menu.add_cascade(label=f"Vendre", menu=sale_sub_menu)
+            x, y = self.master.winfo_pointerxy()
+            main_menu.tk_popup(x, y)
 
-    def popup_info_vente_credit(self, event):
-        index_ligne_select = self.table.selection()
-        menu_popup_info_vente = Menu(self.table, tearoff=0, title="Opérations sur les ventes à crédit", relief=FLAT)
-        menu_popup_info_vente.add_command(label="Valider la vente", command=self.valider_vente)
-        menu_popup_info_vente.add_command(label=f"Imprimer {'la' if len(index_ligne_select) == 1 else 'les'} "
-                                                f"Facture{' de cette vente' if len(index_ligne_select) == 1 else 's de ces ventes'}",
-                                          command=lambda: self.facturier(self.table), compound=LEFT)
-        menu_popup_info_vente.add_separator()
-        menu_popup_info_vente.add_command(label="Ajouter une tranche", command=self.ajouter_tranche_credit)
-        menu_popup_info_vente.add_command(label="Modifier l'échéance", command=self.modifier_echeance)
-        menu_popup_info_vente.add_separator()
-        menu_popup_info_vente.add_command(
-            label=f"Supprimer {'cette' if len(index_ligne_select) == 1 else 'ces'} vente"
-                  f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT,
-            command=lambda: self.annuler_vente_jr_selectionnee(self.table))
+    def get_selected(self):
+        lit_line_id = self.table.selection()
+        return [Product.get_by_code(product_code=self.table.item(line_id)["values"][0]) for line_id in lit_line_id]
 
-        menu_popup_info_vente.tk_popup(self.master.winfo_pointerx(), self.master.winfo_pointery())
+    def sale_selected_product(self, is_new_sale: bool = False):
+        selected_product_list: list[Product] = self.get_selected()
+        if len(selected_product_list) > 0:
+            if not is_new_sale:
+                if selected_product_list[0].stock == 0:
+                    messagebox.showerror("Error", "Stock insuffisant pour ce produit !")
+                    return
+                right_page: VentePage = VentePage.get_shown_page()
+                if not right_page:
+                    right_page = VentePage.last_shown
+                    if not right_page:
+                        right_page = VentePage.list_sale_page[0].add_tab()
+            else:
+                right_page = VentePage.list_sale_page[0].add_tab()
+            right_page.fill_tab_line_with_only_products(selected_product_list)
 
-    def popup_info_vente_normale(self, event):
-        index_ligne_select = self.table.selection()
-        if index_ligne_select:
-            menu_popup_info_vente = Menu(self.table, tearoff=0, title="Opérations sur les ventes", relief=FLAT)
-            menu_popup_info_vente.add_command(
-                label=f"Supprimer {'cette' if len(index_ligne_select) == 1 else 'ces'} vente"
-                      f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT,
-                command=lambda: self.annuler_vente_jr_selectionnee(self.table))
-            menu_popup_info_vente.add_command(label=f"Imprimer {'la' if len(index_ligne_select) == 1 else 'les'} "
-                                                    f"Facture{' de cette vente' if len(index_ligne_select) == 1 else 's de ces ventes'}",
-                                              command=lambda: self.facturier(self.table), compound=LEFT)
-            menu_popup_info_vente.tk_popup(self.master.winfo_pointerx(), self.master.winfo_pointery())
-        index_ligne_select = self.table.selection()
-        menu_popup_info_vente = Menu(self.table, tearoff=0, title="Opérations sur les ventes", relief=FLAT)
-        menu_popup_info_vente.add_command(
-            label=f"Supprimer {'cette' if len(index_ligne_select) == 1 else 'ces'} vente"
-                  f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT,
-            command=lambda: self.annuler_vente_jr_selectionnee(self.table))
-        menu_popup_info_vente.add_command(label=f"Imprimer {'la' if len(index_ligne_select) == 1 else 'les'} "
-                                                f"Facture{' de cette vente' if len(index_ligne_select) == 1 else 's de ces ventes'}",
-                                          command=lambda: self.facturier(self.table), compound=LEFT)
-        menu_popup_info_vente.tk_popup(self.master.winfo_pointerx(), self.master.winfo_pointery())
-
-    def popup_info_vente(self, event):
-        index_ligne_select = self.table.selection()
-        # if index_ligne_select:
-        #     if not self.is_credit:
-        #         self.popup_info_vente_normale(event)
-        #     else:
-        #         self.popup_info_vente_credit(event)
+    def quick_supply(self):
+        selected_product_list = self.get_selected()
+        if len(selected_product_list) > 0:
+            for product in selected_product_list:
+                tl = CTkToplevel(self.master)
+                tl.transient(self.winfo_toplevel())
+                AddSupplyForm(tl, supply=Supply(product=product)).pack()
 
     def clear_table(self):
         for el in self.table.get_children():

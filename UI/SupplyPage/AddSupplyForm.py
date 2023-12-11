@@ -19,26 +19,22 @@ class AddSupplyForm(Frame):
     def __init__(self, master, supply: Supply = None):
         super().__init__(master)
         self.master = master
+        self.configure(background=couleur_sous_fenetre, relief=RAISED, borderwidth=1)
         self.input_check_service = InputCheckService(self.master)
         self.foction_inserer_prix_vente_recent_approv = self.master.register(self.on_product_name_change)
-        self.paned_fen_approv_produit = PanedWindow(self.master, bg=couleur_frame, orient=HORIZONTAL,
-                                                    sashwidth=8)
-        self.paned_fen_approv_produit.pack(expand=YES, fill=BOTH)
+        self.main_frame = LabelFrame(self, text="Nouvel approvisionnement",
+                                     labelanchor=NW,
+                                     bg=couleur_sous_fenetre, fg=couleur_police, bd=1,
+                                     relief=RAISED)
+        self.main_frame.pack(expand=YES, pady=20, padx=20, ipady=5, ipadx=5)
 
-        self.label_frame_caract_approv = LabelFrame(self.paned_fen_approv_produit, text="Nouvel approvisionnement",
-                                                    labelanchor=N,
-                                                    bg=couleur_sous_fenetre, fg=couleur_police, bd=bd_widget,
-                                                    relief=relief_widget)
-
-        self.paned_fen_approv_produit.add(self.label_frame_caract_approv)
-
-        self.label_frame_approv_save = LabelFrame(self.label_frame_caract_approv, text=""
+        self.label_frame_approv_save = LabelFrame(self.main_frame, text=""
                                                   , bg=couleur_sous_fenetre, fg=couleur_police, labelanchor=N,
                                                   bd=bd_widget,
                                                   relief=relief_widget)
         self.label_frame_approv_save.pack(side=TOP)
 
-        self.label_frame_approv_outil_bas = LabelFrame(self.label_frame_caract_approv, text=""
+        self.label_frame_approv_outil_bas = LabelFrame(self.main_frame, text=""
                                                        , bg=couleur_sous_fenetre, fg=couleur_police, labelanchor=N,
                                                        bd=bd_widget,
                                                        relief=relief_widget)
@@ -124,18 +120,16 @@ class AddSupplyForm(Frame):
                                                    font=(police, taille_police_texte))
         self.nom_fournisseur_champs.grid(row=7, column=2)
 
+        ttk.Separator(self.label_frame_approv_save, orient=HORIZONTAL).grid(row=9, columnspan=2, column=1, sticky=EW)
         self.bouton_enregistrer_produit = CTkButton(self.label_frame_approv_save, text="Enregistrer l'approvisonnement",
                                                     # bg=couleur_bouton,
-                                                    command=lambda: self.save_supply(event=0),
-                                                    # fg=couleur_police
-                                                    )
-        self.bouton_enregistrer_produit.grid(row=9, column=1, columnspan=2, sticky=NSEW, pady=(5, 10), padx=5)
+                                                    command=lambda: self.save_supply(event=0),)
+        self.bouton_enregistrer_produit.grid(row=10, column=1, columnspan=2, sticky=NSEW, pady=(5, 10), padx=5)
         if supply is not None:
-            self.product_exp_entry.insert(0, str(supply.expiration_date) if supply.expiration_date else "")
-            self.product_unit_price_entry.insert(0, str(supply.unit_price) if supply.unit_price else "")
-            self.product_unit_coast_entry.insert(0, str(supply.unit_coast) if supply.unit_coast else "")
-            self.product_name_entry.insert(0, str(supply.product.name) if supply.product else "")
-            self.product_count_entry.insert(0, str(supply.product_count) if supply.product_count else "")
+            if supply.product is None:
+                supply.load_product()
+            self.product_name_entry.set("" if supply.product is None else supply.product.name)
+            self.on_product_name_change("" if supply.product is None else supply.product.name)
 
     def suggestion_nom_fournisseur(self):
         # self.nom_fournisseur_champs["values"] = self.approv_table_service.select_nom_fournisseur()
@@ -154,18 +148,12 @@ class AddSupplyForm(Frame):
                 self.product_count_entry.delete(0, END)
                 self.product_unit_price_entry.insert(0, f"{supply[0].unit_price:.0f}")
                 self.product_unit_coast_entry.insert(0, f"{supply[0].unit_coast:.0f}")
-                self.product_count_entry.insert(0, f"{supply[0].cash_amount_entry:.0f}")
+                self.product_count_entry.insert(0, f"{supply[0].product_count:.0f}")
                 return True
         self.product_unit_price_entry.delete(0, END)
         self.product_unit_coast_entry.delete(0, END)
         self.nom_fournisseur_champs.delete(0, END)
         return True
-
-    # @staticmethod
-    # def show():
-    #     tl = CTkToplevel()
-    #     tl.transient(tl.winfo_toplevel())
-    #     AddSupplyForm(tl).pack()
 
     def save_supply(self, event):
         if Staff.current_staff is None:

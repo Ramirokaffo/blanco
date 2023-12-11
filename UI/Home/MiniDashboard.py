@@ -1,6 +1,7 @@
 from datetime import datetime, date, timedelta
 from tkinter import ttk
 
+from DATA.SettingClass.Daily import Daily
 from DATA.SettingClass.Sale import Sale
 from STATIC.ConstantFile import *
 
@@ -23,85 +24,25 @@ class MiniDashboard(Frame):
         self.table.column("colonne1", width=245, minwidth=50, anchor="w")
         self.table.column("colonne2", width=100, minwidth=50, anchor="e")
         self.table.grid(row=1, column=1, columnspan=2, sticky=EW)
-        # self.tableau_bord_operationnel.bind("<<TreeviewSelect>>", self.affiche_info_opera)
         self.load_table_data()
-    # def affiche_info_opera(self, event):
-    #     produ_selectionne = self.tableau_bord_operationnel.selection()
-    #     ligne_select_opera = self.tableau_bord_operationnel.item(produ_selectionne[0])
-    #     valeur_ligne_select_opera = ligne_select_opera["values"]
-    #     if valeur_ligne_select_opera[0].upper() == "Montant max".upper():
-    #         info_bas_vente(
-    #             f"Le produit le plus cher que vous avez vendu depuis le matin a couté {valeur_ligne_select_opera[1]} {unite_monetaire}")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Montant min".upper():
-    #         info_bas_vente(
-    #             f"Le produit le plus moins cher que vous avez vendu depuis le matin a couté {valeur_ligne_select_opera[1]} {unite_monetaire}")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Recette actuelle".upper():
-    #         info_bas_vente(f"Depuis ce matin, vous avez vendu {valeur_ligne_select_opera[1]} {unite_monetaire}")
-    #
-    #     elif "reçus".upper() in valeur_ligne_select_opera[0].upper():
-    #         info_bas_vente(f"Vous avez recu {valeur_ligne_select_opera[1]} clients dépuis ce matin")
-    #
-    #     elif "vendus".upper() in valeur_ligne_select_opera[0].upper():
-    #         info_bas_vente(
-    #             f"Vous avez vendu {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 0 else 'aucun'} "
-    #             f"produit{'' if valeur_ligne_select_opera[1] == 1 else 's'} dépuis ce matin")
-    #
-    #     elif "frequence".upper() in valeur_ligne_select_opera[0].upper():
-    #         info_bas_vente(
-    #             f"Vous recevez en moyenne {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'Non disponible' else '/'} clients/heure dépuis le matin")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "CA d'hier".upper():
-    #         info_bas_vente(f"Hier vous avez vendu {valeur_ligne_select_opera[1]} {unite_monetaire}")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Taux1".upper():
-    #         info_bas_vente(f"Vous avez atteint {valeur_ligne_select_opera[1]} de la recette d'hier")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Vente annulée".upper():
-    #         info_bas_vente(f"Vous avez annulé {valeur_ligne_select_opera[1]} ventes depuis le matin")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "CAR-hier".upper():
-    #         info_bas_vente(
-    #             f"Hier, avant cette heure ci vous aviez déjà vendu {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} {unite_monetaire}")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Taux relatif1".upper():
-    #         info_bas_vente(
-    #             f"Votre recette actuel represente {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} Du CAR-hier")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "CA semaine passée".upper():
-    #         info_bas_vente(
-    #             f"La semaine passée vous avez vendu {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} {unite_monetaire}")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "CA de la semaine".upper():
-    #         info_bas_vente(
-    #             f"Vous avez déjà vendu {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} {unite_monetaire} cette semaine")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Taux2".upper():
-    #         info_bas_vente(
-    #             f"Vous avez atteint {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} du chiffre d'affaire de la semaine passée")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "CA du mois".upper():
-    #         info_bas_vente(
-    #             f"Vous avez déjà vendu {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} {unite_monetaire} ce mois")
-    #
-    #     elif valeur_ligne_select_opera[0].upper() == "Montant min".upper():
-    #         info_bas_vente(
-    #             f"Le produit le plus moins cher que vous avez vendu depuis le matin a couté {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} {unite_monetaire}")
-    #     elif valeur_ligne_select_opera[0].upper() == "Montant min".upper():
-    #         info_bas_vente(
-    #             f"Le produit le plus moins cher que vous avez vendu depuis le matin a couté {valeur_ligne_select_opera[1] if valeur_ligne_select_opera[1] != 'RAS' else '/'} {unite_monetaire}")
 
     def clear_table(self):
         for el in self.table.get_children():
             self.table.delete(el)
 
+    @staticmethod
+    def reload_all_table():
+        if len(MiniDashboard.table_list) > 0:
+            table: MiniDashboard
+            for table in MiniDashboard.table_list:
+                if table.winfo_exists():
+                    table.load_table_data()
+
     def load_table_data(self):
-        """Remplir la treeviews de la fenetre des ventes"""
         liste_info_opera_tree = []
-        ca_today = Sale.get_ca_by_date()
+        ca_today = Sale.get_ca_by_daily()
         liste_info_opera_tree += [["Recette actuelle", ca_today]]
-        client_count = Sale.get_sale_count_by_date()
+        client_count = Sale.get_sale_count_by_daily()
         liste_info_opera_tree += [['Clients reçus', client_count]]
         try:
             sale_period = datetime.now() - Sale.get_first_sale_date_time()
@@ -112,18 +53,21 @@ class MiniDashboard(Frame):
                 ["Frequence(Clients/heure)", f"{round(client_count / sale_period_by_hours, 2)}"]]
         except:
             liste_info_opera_tree += [["Frequence", f"Non disponible"]]
-        sale_product_count = Sale.get_sale_product_count_by_date()
+        sale_product_count = Sale.get_sale_product_count_by_daily()
         liste_info_opera_tree += [[f"{'Produit vendu' if sale_product_count == 1 else 'Produits vendus'}",
                                    sale_product_count]]
-        liste_info_opera_tree += [["Vente annulée", Sale.get_sale_count_by_date(deleted=True)]]
-        ca_yesterday = Sale.get_ca_by_date(ca_date=date.today() - timedelta(days=1))
+        liste_info_opera_tree += [["Vente annulée", Sale.get_sale_count_by_daily(deleted=True)]]
+        current_daily = Daily.get_current_daily()
+        ca_yesterday = Sale.get_ca_by_daily(daily_id=current_daily.id if current_daily else None)
+        # ca_yesterday = Sale.get_ca_by_date(ca_date=date.today() - timedelta(days=1))
         liste_info_opera_tree += [["Recette d'hier", round(ca_yesterday if ca_yesterday else 0)]]
         try:
             taux_jour = f"{round(ca_today / ca_yesterday * 100, 2)}%"
         except:
             taux_jour = "RAS"
         liste_info_opera_tree += [["Taux(%)", taux_jour]]
-        ca_relatif_yesterday = Sale.get_ca_by_date(max_hours=datetime.now().hour, ca_date=date.today() - timedelta(days=1))
+        ca_relatif_yesterday = Sale.get_ca_by_daily(max_hours=datetime.now().hour,
+                                                    daily_id=current_daily.id if current_daily else None)
         liste_info_opera_tree += [["Recette relative d'hier", ca_relatif_yesterday]]
         try:
             taux_relatif_jour = f"{round(ca_today / ca_relatif_yesterday * 100, 2)}%"
@@ -201,10 +145,3 @@ class MiniDashboard(Frame):
         self.table.tag_configure("even", background=couleur_inverse_tree,
                                  foreground=couleur_fg_treeview)
 
-    @staticmethod
-    def reload_all_table():
-        if len(MiniDashboard.table_list) > 0:
-            table: MiniDashboard
-            for table in MiniDashboard.table_list:
-                if table.winfo_exists():
-                    table.load_table_data()

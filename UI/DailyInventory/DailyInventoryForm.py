@@ -14,6 +14,7 @@ from STATIC.ConstantFile import couleur_sous_fenetre, couleur_police_champs
 from Service.AnyService import AnyService
 from Service.InputCheckService import InputCheckService
 from UI.DailyInventory.DailyInventoryTable import DailyInventoryTable
+from UI.Home.MiniDashboard import MiniDashboard
 
 
 class DailyInventoryForm(Frame):
@@ -141,10 +142,10 @@ class DailyInventoryForm(Frame):
             self.new_cash_float_entry.focus_set()
             return
         new_daily_inventory_id = DailyInventory(cash_amount=float(comptant_amount), cash_float=float(new_cash_float),
-                                             saver_staff=Staff.current_staff, daily=Daily.get_current_daily(),
+                                                saver_staff=Staff.current_staff, daily=Daily.get_current_daily(),
                                                 daily_recipe_amount=float(daily_recipe),
                                                 daily_expense_amount=float(daily_expense),
-                                                other_recipe_amount=float(other_recipe),
+                                                sale_recipe_amount=float(other_recipe),
                                                 ).save_to_db()
         Daily.get_current_daily().close_daily()
         Daily.create()
@@ -154,6 +155,8 @@ class DailyInventoryForm(Frame):
         self.cash_amount_entry.delete(0, END)
         DailyInventoryTable.reload_all_table()
         DailyInventoryForm.reload_all_form()
+        MiniDashboard.reload_all_table()
+
 
 
 

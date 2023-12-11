@@ -4,7 +4,6 @@ from DATA.SettingClass.Client import Client
 from datetime import datetime, date
 
 from DATA.SettingClass.Daily import Daily
-from DATA.SettingClass.Exercise import Exercise
 from DATA.SettingClass.Staff import Staff
 
 
@@ -33,6 +32,15 @@ class Sale:
                 bd_connection.commit()
                 return my_cursor.lastrowid
 
+    @staticmethod
+    def get_by_id(id, return_map: bool = False):
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(f"SELECT * FROM {Sale.table_name} WHERE id = %s AND delete_at IS NULL;",
+                                  [id])
+                result = my_cursor.fetchone()
+                return Sale.from_map(result) if not return_map else result
+
     @classmethod
     def from_map(cls, data_map: dict):
         return None if not data_map else Sale(id=data_map.get("id"), is_paid=data_map.get("is_paid"),
@@ -44,11 +52,23 @@ class Sale:
                                               total=data_map.get("total"))
 
     @staticmethod
-    def get_sale_list(page: int = 0, count: int = 20):
+    def get_sale_list(page: int = 0, count: int = 20, is_daily: bool = False, daily_id: int = Daily.get_current_daily().id):
+        extra_sql = ""
+        if is_daily:
+            extra_sql += f"daily_id = '{daily_id}' AND "
         with connect_to_db() as bd_connection:
             with bd_connection.cursor(dictionary=True) as my_cursor:
-                my_cursor.execute(f"SELECT * FROM {Sale.table_name} WHERE delete_at IS NULL ORDER BY id DESC LIMIT %s OFFSET %s;",
+                my_cursor.execute(f"SELECT * FROM {Sale.table_name} WHERE " + extra_sql +
+                                  " delete_at IS NULL ORDER BY id DESC LIMIT %s OFFSET %s;",
                                   [count, page * count])
+                return [Sale.from_map(result) for result in my_cursor.fetchall()]
+
+    @staticmethod
+    def get_daily_sale_list(daily_id: int = Daily.get_current_daily().id, page: int = 0, count: int = 20):
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(f"SELECT * FROM {Sale.table_name} WHERE daily_id = %s AND delete_at IS NULL ORDER BY id DESC LIMIT %s OFFSET %s;",
+                                  [daily_id, count, page * count])
                 return [Sale.from_map(result) for result in my_cursor.fetchall()]
 
     @staticmethod
@@ -70,12 +90,12 @@ class Sale:
                 return my_cursor.fetchone()["ca"]
 
     @staticmethod
-    def get_first_sale_date_time(sale_date: date = date.today(), is_credit: bool = False) -> datetime:
+    def get_first_sale_date_time(daily_id: int = Daily.get_current_daily().id, sale_date: date = date.today(), is_credit: bool = False) -> datetime:
         with connect_to_db() as bd_connection:
             with bd_connection.cursor(dictionary=True) as my_cursor:
-                my_cursor.execute(f"SELECT create_at FROM {Sale.table_name} WHERE date(create_at) = %s AND "
+                my_cursor.execute(f"SELECT create_at FROM {Sale.table_name} WHERE daily_id = %s AND date(create_at) = %s AND "
                                   f"is_credit = %s AND delete_at IS NULL ORDER BY create_at ASC LIMIT 1;",
-                                  [sale_date, is_credit])
+                                  [daily_id, sale_date, is_credit])
                 return my_cursor.fetchone()["create_at"]
 
     @staticmethod
@@ -84,6 +104,14 @@ class Sale:
             with bd_connection.cursor(dictionary=True) as my_cursor:
                 my_cursor.execute(f"SELECT COUNT(*) as sale_count FROM {Sale.table_name} WHERE date(create_at) = %s AND "
                                   f"is_credit = %s AND delete_at IS {'NOT' if deleted else ''} NULL;", [ca_date, is_credit])
+                return my_cursor.fetchone()["sale_count"]
+
+    @staticmethod
+    def get_sale_count_by_daily(daily_id: int = Daily.get_current_daily().id, is_credit: bool = False, deleted: bool = False) -> float:
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(f"SELECT COUNT(*) as sale_count FROM {Sale.table_name} WHERE daily_id = %s AND "
+                                  f"is_credit = %s AND delete_at IS {'NOT' if deleted else ''} NULL;", [daily_id, is_credit])
                 return my_cursor.fetchone()["sale_count"]
 
     @staticmethod
@@ -97,7 +125,21 @@ class Sale:
                 return my_cursor.fetchone()["sale_product_count"]
 
     @staticmethod
-    def get_sale_search(sale_id: str, staff_name: str, client_name: str, page: int = 0, count: int = 20):
+    def get_sale_product_count_by_daily(daily_id: int = Daily.get_current_daily().id, is_credit: bool = False) -> float:
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(f"SELECT SUM(sale_product.product_count) as sale_product_count FROM {Sale.table_name} "
+                                  f"LEFT JOIN sale_product AS sale_product ON sale.id = sale_product.sale_id "
+                                  f"WHERE daily_id = %s AND "
+                                  f"is_credit = %s AND delete_at IS NULL;", [daily_id, is_credit])
+                return my_cursor.fetchone()["sale_product_count"]
+
+    @staticmethod
+    def get_sale_search(sale_id: str, staff_name: str, client_name: str, page: int = 0, count: int = 20,
+                        is_daily: bool = False, daily_id: int = Daily.get_current_daily().id):
+        extra_sql = ""
+        if is_daily:
+            extra_sql += f"daily_id = '{daily_id}' AND "
         with connect_to_db() as bd_connection:
             with bd_connection.cursor(dictionary=True) as my_cursor:
                 my_cursor.execute(f"SELECT {Sale.table_name}.id, {Sale.table_name}.is_paid, {Sale.table_name}.total, "
@@ -105,7 +147,27 @@ class Sale:
                                   f"{Sale.table_name}.create_at, {Sale.table_name}.is_credit "
                                   f"FROM {Sale.table_name} "
                                   f"LEFT JOIN staff ON staff_id = {DBTableName.staff}.id "
-                                  f"LEFT JOIN client ON client_id = {DBTableName.client}.id "
+                                  f"LEFT JOIN client ON client_id = {DBTableName.client}.id WHERE " + extra_sql +
+                                  f" {Sale.table_name}.id LIKE '{sale_id if sale_id else None}%' "
+                                  f"OR staff.firstname LIKE '%{staff_name if staff_name else None}%' "
+                                  f"OR client.firstname LIKE '%{client_name if client_name else None}%' AND {Sale.table_name}.delete_at IS NULL "
+                                  f"ORDER BY {Sale.table_name}.id DESC LIMIT %s OFFSET %s;",
+                                  [count, page * count])
+                results = my_cursor.fetchall()
+                return [Sale.from_map(result) for result in results]
+
+    @staticmethod
+    def get_sale_search121(sale_id: str, staff_name: str, client_name: str, page: int = 0, count: int = 20):
+        sql = f"SELECT {Sale.table_name}.id, {Sale.table_name}.is_paid, {Sale.table_name}.total, "\
+                                  f"{Sale.table_name}.client_id, {Sale.table_name}.staff_id, {Sale.table_name}.delete_at, "\
+                                  f"{Sale.table_name}.create_at, {Sale.table_name}.is_credit "\
+                                  f"FROM {Sale.table_name} "\
+                                  f"LEFT JOIN staff ON staff_id = {DBTableName.staff}.id " \
+              f"LEFT JOIN client ON client_id = {DBTableName.client}.id "
+
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(
                                   f"WHERE {Sale.table_name}.id LIKE '{sale_id}%' OR staff.firstname LIKE '%{staff_name}%' "
                                   f"OR client.firstname LIKE '%{client_name}%' AND {Sale.table_name}.delete_at IS NULL "
                                   f"ORDER BY {Sale.table_name}.id DESC LIMIT %s OFFSET %s;",
@@ -141,6 +203,14 @@ class Sale:
         with connect_to_db() as bd_connection:
             with bd_connection.cursor(dictionary=True) as my_cursor:
                 my_cursor.execute(f"DELETE FROM {self.table_name} WHERE (`id` = %s);",
+                                  [self.id if sale_id is None else sale_id])
+                bd_connection.commit()
+                return True
+
+    def soft_delete(self, sale_id: int = None):
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.execute(f"UPDATE {self.table_name} SET delete_at = CURRENT_DATE() WHERE (`id` = %s);",
                                   [self.id if sale_id is None else sale_id])
                 bd_connection.commit()
                 return True

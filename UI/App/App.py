@@ -1,3 +1,4 @@
+import os
 from tkinter import ttk
 
 from customtkinter import CTkToplevel
@@ -18,10 +19,10 @@ class App(Tk):
         App.main_window = self
         self.title("Del blanco")
         self.configure(bg="lightgray")
-        # self.configure(bg="yellow")
         self.geometry(
             f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}")
-        # fenetre_principale.iconbitmap(logo)
+        # self.iconbitmap(logo)
+        self.iconbitmap(os.path.join(os.getcwd().split("blanco")[0], "blanco", "image_app", logo.split("/")[-1]))
         self.state("zoomed")
         self.my_app_menu = AppMenu(self)
         self.config(menu=self.my_app_menu)
@@ -31,9 +32,6 @@ class App(Tk):
         self.note_book_principale.pack(expand=True, fill=BOTH, side=TOP, )
 
         self.home_page = Home(self.note_book_principale)
-
-        # self.add_product_page = PageAjoutProduit(self.note_book_principale)
-        # self.note_book_principale.add(self.add_product_page, text="Ajouter produit", sticky=NSEW)
 
         self.bottom_bar = BottomBar(self)
         self.bottom_bar.pack()

@@ -38,7 +38,7 @@ class Home(Frame):
 
         # Notebook qui contient la partie gauche de page d'accueil
         self.note_book_west_vente = ttk.Notebook(self.paned_mere_vente, style="mystyle.TNotebook")
-        self.paned_mere_vente.add(self.note_book_west_vente, width=420, minsize=380)
+        self.paned_mere_vente.add(self.note_book_west_vente, width=350, minsize=300)
         self.igm_accueil = ImageService.resize_image(self.note_book_west_vente, image_accueil)
 
         # Onglet gauche de la partie gauche de la page d'accueil
@@ -112,7 +112,7 @@ class Home(Frame):
         self.paned_mere_vente.add(self.note_book_center_vente, minsize=350, width=850)
 
         self.home_action.treeview_accueil.bind("<<TreeviewSelect>>", self.on_treeviews_select)
-        self.home_action.treeview_accueil.selection_set("5")
+        self.home_action.treeview_accueil.selection_set("2")
 
     def on_treeviews_select(self, event):
         indx_ligne_select = self.home_action.treeview_accueil.selection()
@@ -174,7 +174,8 @@ class Home(Frame):
                 pass
         daily_expense_frame = Frame(self.note_book_center_vente)
         self.note_book_center_vente.add(daily_expense_frame, text="Dépenses quotidiennes")
-        self.note_book_center_vente.select(DailyExpensePage(daily_expense_frame).pack())
+        DailyExpensePage(daily_expense_frame).pack()
+        self.note_book_center_vente.select(daily_expense_frame)
         self.daily_expense_page_is_open = daily_expense_frame
 
     def show_daily_recipe_page(self):

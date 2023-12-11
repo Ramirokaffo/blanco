@@ -1,7 +1,6 @@
 from DATA.DataBase.DBManager import connect_to_db
 from DATA.DataBase.DBTableName import DBTableName
 from DATA.SettingClass.Daily import Daily
-from DATA.SettingClass.Exercise import Exercise
 from DATA.SettingClass.Product import Product
 from DATA.SettingClass.Staff import Staff
 from DATA.SettingClass.Supplier import Supplier
@@ -57,6 +56,15 @@ class Supply:
                 f"UPDATE {self.table_name} SET product_count_rest = %s WHERE (id = %s);", list_rest_id)
             return bd_connection
 
+    @staticmethod
+    def re_stock_many(list_rest_id: list):
+        print(list_rest_id)
+        with connect_to_db() as bd_connection:
+            with bd_connection.cursor(dictionary=True) as my_cursor:
+                my_cursor.executemany(
+                    f"UPDATE {Supply.table_name} SET product_count_rest = product_count_rest + %s WHERE (id = %s);", list_rest_id)
+                bd_connection.commit()
+                return tuple(range(my_cursor.lastrowid, my_cursor.lastrowid + my_cursor.rowcount))
 
     @classmethod
     def from_map(cls, data_map: dict):

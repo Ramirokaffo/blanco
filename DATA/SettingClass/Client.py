@@ -61,7 +61,6 @@ class Client(BaseUser):
                 my_cursor.execute(f"SELECT * FROM {Client.table_name} WHERE delete_at IS NULL;")
                 return [Client.from_map(result) if not return_map else result for result in my_cursor.fetchall()]
 
-
     @staticmethod
     def delete_by_id_permanently(id: int = 1):
         try:

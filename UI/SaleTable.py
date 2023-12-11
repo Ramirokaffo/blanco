@@ -1,40 +1,36 @@
-from datetime import date
-from tkinter import *
-
+from DATA.SettingClass.Client import Client
+from DATA.SettingClass.Daily import Daily
 from DATA.SettingClass.Sale import Sale
 from DATA.SettingClass.SaleProduct import SaleProduct
+from DATA.SettingClass.Staff import Staff
+from DATA.SettingClass.Supply import Supply
 from STATIC.ConstantFile import *
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
 import asyncio
 
 from Service.DateTimeService import DateTimeService
 from Service.ImageService import redimension_icone
+from UI.Home.MiniDashboard import MiniDashboard
 
 
 class SaleTable(Frame):
 
-    def __init__(self, master: Misc, height=23, is_credit: bool = False, page: int = 0, count: int = 40):
+    def __init__(self, master: Misc, height=23, is_credit: bool = False, page: int = 0, count: int = 40,
+                 is_daily: bool = True, daily_id: int = Daily.get_current_daily().id):
 
         super().__init__(master, height=height)
         self.is_credit = is_credit
+        self.is_daily = is_daily
+        self.daily_id = daily_id
         self.page = page
         self.count = count
-        # self.vendeur_service = VendeurTableService()
-        # self.liste_vendeur = self.vendeur_service.select_from_vendeur("prenom_vendeur")
-        # self.service_table_vente = VenteTableService()
-        # self.produit_table_service = ProduitTableService()
         self.pack(expand=YES)
         self.master = master
         self.height = height
         self.item_count = 0
         self.fill_function = None
         self.is_fetching = False
-        # self.periode = periode
-        # self.valeur = valeur
-        # self.annee = annee
-        # self.jour = jour
-        # self.etat = etat
-        # self.type_vente = type_vente
+        self.current_function = None
 
         self.fenetre_info_vente = Frame(self.master, bg=couleur_sous_fenetre)
         self.variable_control_recherche = IntVar()
@@ -44,12 +40,9 @@ class SaleTable(Frame):
         self.frame_recherche = LabelFrame(self.fenetre_info_vente, text="", width=10,
                                           bg=couleur_sous_fenetre, bd=bd_widget, relief=relief_widget,
                                           labelanchor=N, fg=couleur_police)
-        self.frame_recherche.pack(anchor="nw")
+        self.frame_recherche.pack(anchor=NW)
         self.variable_flexible_info_vente = StringVar()
         self.variable_flexible_montant_total = StringVar()
-        # self.label_recherche = Label(self.fenetre_info_vente, bg=couleur_label, fg=couleur_police,
-        #                              textvariable=self.variable_flexible_montant_total)
-        # self.label_recherche.pack(anchor="se")
         self.label_rechercher = Label(self.fenetre_info_vente, bg=couleur_bouton, fg=couleur_police,
                                       textvariable=self.variable_flexible_info_vente)
         self.label_rechercher.place(x=1, y=20)
@@ -67,60 +60,22 @@ class SaleTable(Frame):
         self.recherche_nom_client_vente = Label(self.frame_recherche, text="Nom du Client:", bg=couleur_label,
                                                 fg=couleur_police)
         self.recherche_nom_client_vente.grid(row=1, column=3)
-        self.recherche_nom_client_vente_champs = ttk.Combobox(self.frame_recherche, width=largeur_champs_achat,
-                                                              style="mystyle.TCombobox",
-                                                              font=(police, taille_police_texte),
-                                                              # values=self.service_table_vente.selectionner_client_regulier(),
-                                                              validate="key",
-                                                              validatecommand=self.fonction_validation_recherche_vente,
-                                                              # postcommand=self.service_table_vente.selectionner_client_regulier()
-                                                              )
-        self.recherche_nom_client_vente_champs.grid(row=1, column=4)
+        self.search_client_entry = ttk.Combobox(self.frame_recherche, width=largeur_champs_achat,
+                                                style="mystyle.TCombobox",
+                                                font=(police, taille_police_texte),
+                                                validate="key", postcommand=self.on_client_select,
+                                                validatecommand=self.fonction_validation_recherche_vente,
+                                                )
+        self.search_client_entry.grid(row=1, column=4)
 
         self.recherche_nom_vendeur_vente = Label(self.frame_recherche, text="Vendu par:", bg=couleur_label,
                                                  fg=couleur_police)
         self.recherche_nom_vendeur_vente.grid(row=1, column=5)
-        self.recherche_nom_vendeur_vente_champs = ttk.Combobox(self.frame_recherche, width=largeur_champs_achat,
-                                                               font=(police,
-                                                                     taille_police_texte),
-                                                               validate="key",
-                                                               validatecommand=self.fonction_validation_recherche_vente,
-                                                               # postcommand=lambda: self.vendeur_service.select_from_vendeur(
-                                                               #     "prenom_vendeur"), values=self.liste_vendeur,
-                                                               # style="mystyle.TCombobox"
-                                                               )
-        self.recherche_nom_vendeur_vente_champs.grid(row=1, column=6)
-        # self.recherche_nom_vendeur_vente_champs["values"] = liste_vendeur
-        # if jour == date.today().day:
-        self.recherche_heure_Jour_vente = Label(self.frame_recherche, text="Jour/Heure de la vente:", bg=couleur_label,
-                                                fg=couleur_police)
-        self.recherche_heure_Jour_vente.grid(row=1, column=7)
-        self.recherche_heure_Jour_vente_champs = Entry(self.frame_recherche, validate="key",
-                                                       validatecommand=self.fonction_validation_recherche_vente)
-        self.recherche_heure_Jour_vente_champs.grid(row=1, column=8)
-        self.recherche_heure_Jour_vente_champs.focus_set()
-        # elif valeur in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12):
-        #     self.recherche_heure_Jour_vente = Label(self.frame_recherche, text="Jour:", bg=couleur_label,
-        #                                             fg=couleur_police)
-        #     self.recherche_heure_Jour_vente.grid(row=1, column=7)
-        #     self.recherche_heure_Jour_vente_champs = Entry(self.frame_recherche, validate="key",
-        #                                                    validatecommand=self.fonction_validation_recherche_vente)
-        #     self.recherche_heure_Jour_vente_champs.grid(row=1, column=8)
-        #     self.recherche_heure_Jour_vente_champs.focus_set()
+        self.search_seller_entry = ttk.Combobox(self.frame_recherche, width=largeur_champs_achat,
+                                                font=(police, taille_police_texte),
+                                                validate="key", postcommand=self.on_seller_select)
+        self.search_seller_entry.grid(row=1, column=6)
 
-        # else:
-        #     self.recherche_heure_Jour_vente = Label(self.frame_recherche, text="Trimestre:", bg=couleur_label,
-        #                                             fg=couleur_police)
-        #     # recherche_heure_Jour_vente.grid(row=1, column=7)
-        #     self.recherche_heure_Jour_vente_champs = Entry(self.frame_recherche)
-        #     # recherche_heure_Jour_vente_champs.grid(row=1, column=8)
-
-        style_label = ttk.Style()
-        style_label.configure("mystyle.Treeview", highlightthickness=0, bd=0, font=(police, taille_police_texte),
-                              bg="red",
-                              fg="orange")
-        style_label.configure("mystyle.Treeview.Heading", font=(police, taille_police_texte, "bold"), background="red")
-        style_label.layout("mystyle.Treeview", [("mystyle.Treeview.treearea", {"sticky": "nswe"})])
         self.frame_mil_vente = LabelFrame(self.fenetre_info_vente, text="", width=10,
                                           bg=couleur_sous_fenetre, bd=bd_widget, relief=relief_widget,
                                           labelanchor=N, fg=couleur_police)
@@ -131,28 +86,17 @@ class SaleTable(Frame):
         self.barre_defilement_horiz_vent = Scrollbar(self.frame_mil_vente, troughcolor="blue", bg="yellow",
                                                      orient=HORIZONTAL)
         self.barre_defilement_horiz_vent.pack(fill=X, side=BOTTOM)
-        # self.is_credit = self.type_vente == "credit"
-        # max_count = self.service_table_vente.select_max_count_id_relatif(type_vente=self.type_vente, etat=self.etat,
-        #                                                                  periode=self.periode, valeur=self.valeur)
-        self.colone = [str(j) for j in range(1, 7)]
         self.table = ttk.Treeview(self.frame_mil_vente, selectmode=EXTENDED, height=int(self.height),
-                                  style="mystyle.Treeview",
-                                  yscrollcommand=self.table_y_scroll_command, columns=self.colone,
-                                show="tree headings", padding=[20, 8, 90, 20],
-                                  xscrollcommand=self.barre_defilement_horiz_vent.set)
-        # values = [sale.id, sale.is_paid, sale.create_at, sale.total])
+                                  yscrollcommand=self.table_y_scroll_command, columns=[str(j) for j in range(1, 7)],
+                                show="tree headings", xscrollcommand=self.barre_defilement_horiz_vent.set)
 
         self.table.bind("<<TreeviewSelect>>", self.affiche_auto_info_vente)
         self.table.heading("1", text="N°", anchor="w")
-        # self.table.heading("2", text="Nom du client", anchor="w")
         self.table.heading("2", text="Vendu par", anchor="w")
         self.table.heading("3", text="Date et heure de vente", anchor="c")
         self.table.heading("4", text="Montant total", anchor="c")
         self.table.heading("5", text="Client", anchor="w")
         self.table.heading("6", text="Type de vente", anchor="w")
-        # if self.is_credit:
-        #     self.table.heading("6", text="Avance", anchor="c")
-        #     self.table.heading("7", text="Echéance", anchor="w")
 
         self.table.column("1", width=50, minwidth=50, anchor="w")
         self.table.column("2", width=250, minwidth=100, anchor="w")
@@ -160,15 +104,6 @@ class SaleTable(Frame):
         self.table.column("4", width=200, minwidth=100, anchor="c")
         self.table.column("5", width=119, minwidth=150, anchor="w")
         self.table.column("6", width=119, minwidth=100, anchor="w")
-
-
-        # for g, qpq in enumerate(range(8, int(max_count) * 30 - 2, 3)):
-        #     self.table.heading(f"{qpq}", text=f"produit {g + 1}", anchor="w")
-        #     self.table.heading(f"{qpq + 1}", text=f"Quantité {g + 1}", anchor="w")
-        #     self.table.heading(f"{qpq + 2}", text=f"prix unitaire {g + 1}", anchor="w")
-        #     self.table.column(f"{qpq}", width=200, minwidth=100, anchor="w")
-        #     self.table.column(f"{qpq + 1}", width=100, minwidth=50, anchor="w")
-        #     self.table.column(f"{qpq + 2}", width=150, minwidth=75, anchor="w")
 
         self.table.pack(expand=YES)
         self.barre_defilement.config(command=self.table.yview)
@@ -183,34 +118,27 @@ class SaleTable(Frame):
         self.label_montant_vente = Label(self.lf_retour_vente, textvariable=self.variable_flexible_montant_total,
                                          anchor=SW, bg=couleur_sous_fenetre,
                                          font=(police, taille_police_texte + 3, "bold"))
-        # if self.periode == "DAY":
         self.label_montant_vente.pack(side=RIGHT, anchor=SE)
 
         self.table.bind("<ButtonRelease-3>", self.popup_info_vente)
-        # self.fenetre_info_vente.bind("<Expose>", appui_onglet_all)
-        self.recherche_nom_client_vente_champs.bind("<<ComboboxSelected>>", self.affiche_treeview)
-        self.recherche_nom_vendeur_vente_champs.bind("<<ComboboxSelected>>", self.affiche_treeview)
-
-        # self.recherche_num_vente_champs.bind("<Enter>", self.details_seacrch_num_vnt)
-        # self.recherche_nom_client_vente_champs.bind("<Enter>", self.details_search_combinee_vnt)
-        # self.recherche_nom_vendeur_vente_champs.bind("<Enter>", self.details_search_combinee_vnt)
-        # self.recherche_heure_Jour_vente_champs.bind("<Enter>", self.details_search_combinee_vnt)
-        # self.table.bind("<Enter>", self.details_liste_vnt)
-        # self.table.bind("<Expose>", self.affiche_treeview)
+        self.search_client_entry.bind("<<ComboboxSelected>>", self.show_search_result)
+        self.search_seller_entry.bind("<<ComboboxSelected>>", self.show_search_result)
         self.table.bind("<<TreeviewSelect>>", self.affiche_auto_info_vente)
         self.bind("<Expose>", self.bind_on_expose)
         self.affiche_treeview(0)
 
     def bind_on_expose(self, event):
-        self.master.master.master.master.master.master.bind("<Return>", self.show_search_result)
+        self.winfo_toplevel().bind("<Return>", self.show_search_result)
+        self.reload_same_function()
+
+    def on_client_select(self):
+        self.search_client_entry.configure(values=[client.firstname for client in Client.get_all()])
+
+    def on_seller_select(self):
+        self.search_seller_entry.configure(values=[seller.firstname for seller in Staff.get_all()])
 
     def table_y_scroll_command(self, first, last):
-        # print(first, last, type(last))
         self.barre_defilement.set(first, last)
-        # print([self.table.size][0])
-        # print(len(self.table.keys()), self.table.keys())
-        # print(len(self.table.get_children()), self.table.get_children())
-
         if not self.is_fetching and float(last) > 0.9:
             self.is_fetching = True
             asyncio.run(self.fetch_data_async(page=self.page + 1, count=self.count))
@@ -222,6 +150,53 @@ class SaleTable(Frame):
         self.insert_table_line(list_sale)
         self.is_fetching = False
 
+    def get_selected_sale(self) -> list[Sale]:
+        list_line_id = self.table.selection()
+        list_selected_sale: list[Sale] = []
+        for line_id in list_line_id:
+            line_data = self.table.item(line_id)
+            if "sale" in line_data["tags"]:
+                list_selected_sale.append(Sale.get_by_id(line_data["values"][0]))
+        return list_selected_sale
+
+    def get_selected_sale_sale_product(self):
+        sale_line_id = self.table.selection()[0]
+        list_line_id = self.table.get_children(sale_line_id)
+        list_selected_sale_sale_product: list[SaleProduct] = []
+        for line_id in list_line_id:
+            line_data = self.table.item(line_id)
+            if "sale_product" in line_data["tags"]:
+                list_selected_sale_sale_product.append(SaleProduct.get_by_id(sale_product_id=int(line_data["tags"][-1])))
+        return list_selected_sale_sale_product
+
+    def get_selected_sale_product(self):
+        list_line_id = self.table.selection()[0]
+        list_selected_sale_sale_product: list[SaleProduct] = []
+        for line_id in list_line_id:
+            line_data = self.table.item(line_id)
+            if "sale_product" in line_data["tags"]:
+                list_selected_sale_sale_product.append(SaleProduct.get_by_id(sale_product_id=int(line_data["values"][0])))
+        print(self.table.item(list_line_id[0]))
+        print(self.table.item(list_line_id[0])["values"])
+        return list_selected_sale_sale_product
+
+    def delete_selected_sale(self):
+        selected_sales = self.get_selected_sale()
+        list_re_stock = []
+        if not messagebox.askyesno("DEL BLANCO", "Vous etes sur de vouloir supprimer cette vente ?"):
+            return
+        for sale in selected_sales:
+            sale.soft_delete()
+            list_re_stock += [[sale_product.product_count, sale_product.supply.id] for sale_product in SaleProduct.get_by_sale_id(sale_id=sale.id)]
+        Supply.re_stock_many(list_re_stock)
+        self.reload_same_function()
+        messagebox.showinfo("DEL BLANCO", "Vente supprimée avec succès")
+        MiniDashboard.reload_all_table()
+
+    def reload_same_function(self):
+        self.clear_table()
+        self.affiche_treeview(0)
+
     def displays(self):
         self.fenetre_info_vente.pack(expand=YES)
         return self.master
@@ -229,35 +204,6 @@ class SaleTable(Frame):
     def quit_fen_vente(self):
         self.master.destroy()
         return
-
-    def annuler_vente_jr_selectionnee(self, table):
-        index_ligne_select = table.selection()
-        # question = messagebox.askyesno("DEL BLANCO", f"Voulez-vous vraiment supprimer "
-        #                                         f"{'cette vente?' if len(index_ligne_select) == 1 else 'ces ventes?'}\ncette opération est ireversible")
-        # if question:
-        #     list_id_vent = []
-        #     liste_statut = []
-        #     if 5 == 5:
-        #         for idt in index_ligne_select:
-        #             list_id_vent += [((table.item(idt))["values"])[0]]
-        #             liste_statut += [annul_vente_wid(((table.item(idt))["values"])[0], str(date.today()))]
-        #         for i in index_ligne_select:
-        #             table.delete(int(i))
-        #         if len(liste_statut) == 1 and liste_statut == [False]:
-        #             return
-        #         elif len(liste_statut) != 1 and False in liste_statut:
-        #             messagebox.showinfo(nom_ets,
-        #                                 f"{liste_statut.count(True)} vente{'' if liste_statut.count(True) == 1 else 's'} "
-        #                                 f"supprimée{'' if liste_statut.count(True) == 1 else 's'} sur {len(liste_statut)}!")
-        #         else:
-        #             messagebox.showinfo(nom_ets, f"Vente{'' if len(index_ligne_select) == 1 else 's'} "
-        #                                          f"supprimée{'' if len(index_ligne_select) == 1 else 's'} avec succès!")
-        #         # tableau_operationnel_manager.remplir_treeview_opera()
-        #         # stock_critic_table.remplir_treeviiew_stock_critic()
-        #         # ListeProduitVenteBoxInstance.remplir_listbox_regulier()
-        #         # ListeProduitVenteBoxInstance.remplir_list_box_all_prod_vente()
-        #     # except:
-        #     #     messagebox.showerror("Erreur", "Erreur inconnue")
 
     def facturier(self, table):
         # global index_ligne_select
@@ -277,7 +223,6 @@ class SaleTable(Frame):
     def affiche_auto_info_vente(self, event):
         """Afficher automatiquement les informations de la vente lorsque l'utilisateur clique sur une vente"""
         """variable_flexible_info_vente"""
-        # print(fenetre_info_vente.focus_get())
         index_ligne_select = self.table.selection()
         if index_ligne_select:
             #     print(table.item(index_ligne_select[0])["values"])
@@ -289,54 +234,26 @@ class SaleTable(Frame):
         # self.master.after(5, self.affiche_treeview, 0)
         return True
 
-    def popup_info_vente_credit(self, event):
-        index_ligne_select = self.table.selection()
-        menu_popup_info_vente = Menu(self.table, tearoff=0, title="Opérations sur les ventes à crédit", relief=FLAT)
-        menu_popup_info_vente.add_command(label="Valider la vente", command=self.valider_vente)
-        menu_popup_info_vente.add_command(label=f"Imprimer {'la' if len(index_ligne_select) == 1 else 'les'} "
-                                                f"Facture{' de cette vente' if len(index_ligne_select) == 1 else 's de ces ventes'}",
-                                          command=lambda: self.facturier(self.table), compound=LEFT)
-        menu_popup_info_vente.add_separator()
-        menu_popup_info_vente.add_command(label="Ajouter une tranche", command=self.ajouter_tranche_credit)
-        menu_popup_info_vente.add_command(label="Modifier l'échéance", command=self.modifier_echeance)
-        menu_popup_info_vente.add_separator()
-        menu_popup_info_vente.add_command(
-            label=f"Supprimer {'cette' if len(index_ligne_select) == 1 else 'ces'} vente"
-                  f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT,
-            command=lambda: self.annuler_vente_jr_selectionnee(self.table))
-
-        menu_popup_info_vente.tk_popup(self.master.winfo_pointerx(), self.master.winfo_pointery())
-
     def popup_info_vente_normale(self, event):
+        self.get_selected_sale()
         index_ligne_select = self.table.selection()
         if index_ligne_select:
             menu_popup_info_vente = Menu(self.table, tearoff=0, title="Opérations sur les ventes", relief=FLAT)
             menu_popup_info_vente.add_command(
                 label=f"Supprimer {'cette' if len(index_ligne_select) == 1 else 'ces'} vente"
-                      f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT,
-                command=lambda: self.annuler_vente_jr_selectionnee(self.table))
+                      f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT, command=self.delete_selected_sale)
             menu_popup_info_vente.add_command(label=f"Imprimer {'la' if len(index_ligne_select) == 1 else 'les'} "
                                                     f"Facture{' de cette vente' if len(index_ligne_select) == 1 else 's de ces ventes'}",
                                               command=lambda: self.facturier(self.table), compound=LEFT)
             menu_popup_info_vente.tk_popup(self.master.winfo_pointerx(), self.master.winfo_pointery())
-        index_ligne_select = self.table.selection()
-        menu_popup_info_vente = Menu(self.table, tearoff=0, title="Opérations sur les ventes", relief=FLAT)
-        menu_popup_info_vente.add_command(
-            label=f"Supprimer {'cette' if len(index_ligne_select) == 1 else 'ces'} vente"
-                  f"{'' if len(index_ligne_select) == 1 else 's'}", compound=LEFT,
-            command=lambda: self.annuler_vente_jr_selectionnee(self.table))
-        menu_popup_info_vente.add_command(label=f"Imprimer {'la' if len(index_ligne_select) == 1 else 'les'} "
-                                                f"Facture{' de cette vente' if len(index_ligne_select) == 1 else 's de ces ventes'}",
-                                          command=lambda: self.facturier(self.table), compound=LEFT)
-        menu_popup_info_vente.tk_popup(self.master.winfo_pointerx(), self.master.winfo_pointery())
 
     def popup_info_vente(self, event):
         index_ligne_select = self.table.selection()
         if index_ligne_select:
             if not self.is_credit:
                 self.popup_info_vente_normale(event)
-            else:
-                self.popup_info_vente_credit(event)
+            # else:
+            #     self.popup_info_vente_credit(event)
 
     def ajouter_tranche_credit(self):
         index_ligne_select = self.table.selection()
@@ -379,58 +296,52 @@ class SaleTable(Frame):
         # else:
         #     messagebox.showerror("Erreur", "Une erreur s'est produite lors de la validation de vente !")
 
-    # def details_seacrch_num_vnt(self, event):
-    #     info_bas_vente("Recherchez exclusivement avec le numero de la vente")
-
-    # def details_search_combinee_vnt(self, event):
-    #     info_bas_vente("Faites une recherche combinée avec le nom du vendeur, le nom du client et la date à laquelle"
-    #                    " la vente a été éffectuée")
-
-    # def details_liste_vnt(self, event):
-    #     info_bas_vente(
-    #         "Ici s'affiche la liste des ventes que vous avez éffectué; Cliquez sur une ou plusieurs ventes"
-    #         " pour y éffectuer des actions")
-
     def clear_table(self):
         for el in self.table.get_children():
             self.table.delete(el)
 
     def make_function(self):
-        heure_vente_recherche_table = self.recherche_heure_Jour_vente_champs.get()
-        staff_name = self.recherche_nom_vendeur_vente_champs.get()
-        client_name = self.recherche_nom_client_vente_champs.get()
+        staff_name = self.search_seller_entry.get()
+        client_name = self.search_client_entry.get()
         sale_id = self.recherche_num_vente_champs.get()
         if sale_id or staff_name or client_name:
-            self.fill_function = lambda page, count: Sale().get_sale_search(sale_id=sale_id,
+            self.fill_function = lambda page, count: Sale.get_sale_search(sale_id=sale_id,
                                                                             client_name=client_name,
                                                                             staff_name=staff_name,
-                                                                            page=page, count=count)
+                                                                            page=page, count=count,
+                                                                          is_daily=self.is_daily,
+                                                                          daily_id=self.daily_id)
         else:
-            self.fill_function = lambda page, count: Sale().get_sale_list(page=page, count=count)
+            self.fill_function = lambda page, count: Sale.get_sale_list(page=page, count=count,
+                                                                          is_daily=self.is_daily,
+                                                                          daily_id=self.daily_id)
         return self.fill_function
 
     def show_search_result(self, event):
         self.is_fetching = True
+        self.page = 0
         self.clear_table()
         self.affiche_treeview(0)
         self.is_fetching = False
 
     def affiche_treeview(self, event):
-        self.insert_table_line(self.make_function()(self.page, self.count))
+        self.current_function = lambda: self.insert_table_line(self.make_function()(self.page, self.count))
+        self.current_function()
 
     def insert_table_line(self, datas: list[Sale]):
         for i, sale in enumerate(datas):
             sale.load_client()
             sale.load_staff()
-            self.table.insert("", index=END, iid=str(self.item_count), tags=("even" if i % 2 else "odd",),
+            self.table.insert("", index=END, iid=str(self.item_count), tags=("even" if i % 2 else "odd", "sale"),
                               values=[sale.id, sale.staff.get_all_name() if sale.staff is not None else "",
                                       DateTimeService.format_date_time(sale.create_at), sale.total, sale.client.get_all_name() if sale.client is not None else "",
                                       "Crédit" if sale.is_credit else "Normale"], open=False)
             sub_line_parent = self.item_count
             self.item_count += 1
-            for j, sale_product in enumerate(SaleProduct().get_sale_product_sale_with_id(sale.id)):
+            sale_product: SaleProduct
+            for j, sale_product in enumerate(SaleProduct.get_sale_product_sale_with_id(sale.id)):
                 sale_product.load_supply().load_product()
-                self.table.insert(str(sub_line_parent), END, str(self.item_count), tags=("even1" if j % 2 else "odd1",),
+                self.table.insert(str(sub_line_parent), END, str(self.item_count), tags=("even1" if j % 2 else "odd1", "sale_product", str(sale_product.id)),
                                   open=False,
                                   values=[sale_product.product_count, sale_product.supply.product.name,
                                           sale_product.unit_price])

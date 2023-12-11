@@ -82,22 +82,23 @@ class VentePage(Frame):
         self.frame_bottom.pack(anchor=SW, fill=X, side=BOTTOM)
 
         self.button_close_tap = Button(self.frame_bottom, text="Quitter", command=lambda: self.quit_tab(),
-                                       relief=GROOVE, width=15)
+                                        width=15, background=couleur_sous_fenetre)
         self.button_close_tap.pack(side=LEFT)
 
         self.button_add_tap = Button(self.frame_bottom, text="Ajouter un onglet", command=lambda: self.add_tab()
-                                     , relief=GROOVE, width=15)
+                                     , width=15, background=couleur_sous_fenetre)
         self.button_add_tap.pack(side=LEFT)
 
         self.frame_bottom_center = LabelFrame(self.frame_bottom, background=couleur_sous_fenetre, border=0)
         self.frame_bottom_center.pack(side=LEFT, fill=BOTH, padx=(120, 5,))
         #
         self.button_save_sale = Button(self.frame_bottom_center, text="Enregistrer", command=lambda: self.save_sale(0),
-                                       relief=GROOVE, width=15)
+                                       width=15, background=couleur_sous_fenetre)
         self.button_save_sale.pack(side=LEFT)
         #
         self.button_save_sale_and_print = Button(self.frame_bottom_center, text="Enregistrer et imprimer",
-                                                 command=lambda: self.save_sale(0), relief=GROOVE, width=18)
+                                                 command=lambda: self.save_sale(0), width=18
+                                                 , background=couleur_sous_fenetre)
         self.button_save_sale_and_print.pack(side=RIGHT)
 
         self.label_product_total_sum = Label(self.frame_bottom, textvariable=self.variable_total_sum, font="20",
@@ -112,21 +113,18 @@ class VentePage(Frame):
         self.my_client = Client()
         self.bind("<Expose>", self.on_expose)
         self.bind("<Unmap>", self.on_hide)
-        self.master.master.master.master.master.bind("<FocusOut>", self.on_focus_out)
-        self.master.master.master.master.master.bind("<FocusIn>", self.on_focus_in)
+        # self.master.master.master.master.master.bind("<FocusOut>", self.on_focus_out)
+        # self.master.master.master.master.master.bind("<FocusIn>", self.on_focus_in)
 
     def on_focus_out(self, event):
-        # print("On focus out")
-        self.master.master.master.master.master.unbind("<KeyRelease-Return>")
+        self.winfo_toplevel().unbind("<KeyRelease-Return>")
 
     def on_focus_in(self, event):
-        # print("On focus in")
-        self.master.master.master.master.master.bind("<KeyRelease-Return>", self.save_sale)
+        self.master.winfo_toplevel().bind("<KeyRelease-Return>", self.save_sale)
 
     def on_expose(self, event):
-        # print("On expose")
         self.is_shown = True
-        self.master.master.master.master.master.bind("<KeyRelease-Return>", self.save_sale)
+        self.master.winfo_toplevel().bind("<KeyRelease-Return>", self.save_sale)
 
     def on_client_fiche_tap(self):
         self.client_button.configure(background="green", activebackground="green")
@@ -165,7 +163,7 @@ class VentePage(Frame):
     def on_hide(self, event):
         self.is_shown = False
         VentePage.last_shown = self
-        self.master.master.master.master.master.unbind("<KeyRelease-Return>")
+        self.master.winfo_toplevel().unbind("<KeyRelease-Return>")
 
     def get_shown_tab(self) -> OneSaleTap | None:
         shown = [one_tab for one_tab in self.my_list_sale_tab if one_tab.is_shown]
@@ -282,20 +280,21 @@ class VentePage(Frame):
             real_product_count: int = sale_product.product_count
             if real_product_count > sale_product.supply.product_count_rest:
                 rest_product_count = real_product_count
+                supply: Supply
                 for supply in Supply().find_product_supply_with_stock(sale_product.supply.product.id):
                     new_sale_product = SaleProduct(unit_coast=supply.unit_coast,
                                                    unit_price=sale_product.unit_price,
                                                    supply=supply,
                                                    sale=sale)
-                    if rest_product_count >= supply.cash_float:
-                        rest_product_count -= supply.cash_float
-                        new_sale_product.product_count = supply.cash_float
+                    if rest_product_count >= supply.product_count_rest:
+                        rest_product_count -= supply.product_count_rest
+                        new_sale_product.product_count = supply.product_count_rest
                         list_sale_product_to_save.append(new_sale_product)
-                        list_supply_to_update.append((supply.cash_float, supply.id))
+                        list_supply_to_update.append((0, supply.id))
                     else:
                         new_sale_product.product_count = rest_product_count
                         list_sale_product_to_save.append(new_sale_product)
-                        list_supply_to_update.append((rest_product_count, supply.id))
+                        list_supply_to_update.append((supply.product_count_rest - rest_product_count, supply.id))
                         break
             else:
                 sale_product.sale = sale

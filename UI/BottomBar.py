@@ -5,8 +5,6 @@ from STATIC.ConstantFile import *
 from Service.AuthentificationService import AuthentificationPage
 from Service.CalculatorService import PrincipalCalculator, StandardCalculator
 from Service.ImageService import ImageService
-# from UI.BoiteProduit.BoiteProduit import ProductBox
-# from UI.BoiteProduit.showProductBox import show_product_box
 from UI.Product.BoiteProduit import ProductBox
 from UI.Home.Vente.VentePage import VentePage
 
@@ -21,7 +19,6 @@ class BottomBar(Frame):
         ipady_bout = 5
         self.nom_vendeur_achat_champs = StringVar()
         self.master: Misc = master
-        # self.master.configure(bg="brown")
 
         self.frame_outils_bas_vente_mere = LabelFrame(self.master, background="white")
         self.frame_outils_bas_vente_mere.pack(side=BOTTOM, fill=X)
